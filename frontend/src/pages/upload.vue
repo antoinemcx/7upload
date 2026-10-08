@@ -1,11 +1,5 @@
-<script setup lang="ts">
+<script setup lang="ts"></script>
 
-</script>
+<template>UPLOAD</template>
 
-<template>
-UPLOAD
-</template>
-
-<style scoped>
-
-</style>
+<style scoped></style>
