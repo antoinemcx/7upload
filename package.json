@@ -1,0 +1,26 @@
+{
+  "name": "n7-vuejs",
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev": "run-p dev:*",
+    "fmt": "oxfmt",
+    "lint": "oxlint"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.10.1",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.10.1",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "npm-run-all2": "^9.0.3",
+    "oxfmt": "^0.72.0",
+    "oxlint": "^1.87.0"
+  }
+}
