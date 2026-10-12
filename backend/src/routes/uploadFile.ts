@@ -1,67 +1,51 @@
-import type { Request, Response } from "express";
+import type { RequestHandler } from "express";
+import multer from "multer";
+import z from "zod";
+import { prisma } from "../prisma.ts";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, rename } from "node:fs/promises";
+import { createReadStream } from "node:fs";
 
-/** POST /files body. */
-export interface UploadFileBody {
-  /** Required. File name */
-  name: string;
-  /** Required. File content encoded in base64 */
-  content: string;
-  /**
-   * File retention duration in seconds.
-   * This field cannot be set if singleUse is true.
-   */
-  expiresIn?: number;
-  /** True if the file is deleted after the first download */
-  singleUse?: boolean;
-  /** Optional. Password to protect the file for download */
-  password?: string;
-}
+const upload = multer({ dest: "tmp/files/" });
 
-export async function execute(
-  req: Request<{}, {}, Partial<UploadFileBody>>,
-  res: Response,
-) {
-  const { name, content, expiresIn, singleUse, password } = req.body ?? {};
-  await validateRequest(req.body, res);
+const validator = z.object({
+  retention: z.coerce.number().int().positive(),
+  autodestruct: z.coerce.boolean(),
+  password: z.string().optional(),
+});
 
-  // TODO: generate a unique uuid for the file
-  // TODO: hash the password if provided (never store it in plain text)
-  // TODO: save the metadata (name, expiration, single use, password)
-  // TODO: store file
-  const uuid = "stub";
+export const handlers: RequestHandler[] = [
+  upload.single("files"),
+  async (req, res) => {
+    const file = req.file;
+    if (!file) {
+      res.status(422).send();
+      return;
+    }
+    const { retention, autodestruct, password } = validator.parse(req.body);
 
-  res
-    .status(201)
-    .json({ uuid, link: `${req.protocol}://${req.get("host")}/files/${uuid}` });
-}
+    const hash = createHash("sha256");
 
-async function validateRequest(body: Partial<UploadFileBody>, res: Response) {
-  const { name, content, expiresIn, singleUse, password } = body ?? {};
+    const readStream = createReadStream(file.path);
+    readStream.pipe(hash);
+    hash.end();
 
-  if (typeof name !== "string" || name.length === 0 || typeof content !== "string") {
-    res.status(400).json({ error: "The fields 'name' and 'content' are required." });
-    return;
-  }
-  if (expiresIn !== undefined && (typeof expiresIn !== "number" || expiresIn <= 0)) {
-    res.status(400).json({ error: "'expiresIn' must be a positive number" });
-    return;
-  }
-  if (singleUse !== undefined && typeof singleUse !== "boolean") {
-    res.status(400).json({ error: "'singleUse' must be a boolean" });
-    return;
-  }
-  if (singleUse && expiresIn !== undefined) {
-    res.status(400).json({ error: "'expiresIn' cannot be set if 'singleUse' is true" });
-    return;
-  }
-  if (singleUse === undefined && expiresIn === undefined) {
-    res
-      .status(400)
-      .json({ error: "Either 'singleUse' must be true or 'expiresIn' must be set" });
-    return;
-  }
-  if (password !== undefined && typeof password !== "string") {
-    res.status(400).json({ error: "'password' must be a string" });
-    return;
-  }
-}
+    const entity = await prisma.file.create({
+      data: {
+        name: file.filename,
+        mimeType: file.mimetype,
+        hash: hash.digest(),
+        retention,
+        autodestruct,
+      },
+    });
+
+    await mkdir("files");
+    await rename(file.path, "files/" + entity.id);
+
+    res.status(201).json({
+      id: entity.id,
+      link: `${req.protocol}://${req.get("host")}/files/${entity.id}`,
+    });
+  },
+];

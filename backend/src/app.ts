@@ -27,7 +27,7 @@ app.use(express.json({ limit: "50mb" })); // file upload limit
 
 /* Routing */
 const router = Router();
-router.post("/files", uploadFile.execute);
+router.post("/upload", ...uploadFile.handlers);
 router.get("/files/:hash", downloadFile.execute);
 app.use(router);
 

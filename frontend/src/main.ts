@@ -4,7 +4,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { routes } from "vue-router/auto-routes";
 
 import "vuetify/styles";
-import { createVuetify } from "vuetify";
+import { createRulesPlugin, createVuetify } from "vuetify";
 import * as components from "vuetify/components";
 import * as directives from "vuetify/directives";
 
@@ -35,7 +35,7 @@ const vuetify = createVuetify({
   components,
   directives,
   theme: {
-    defaultTheme: "light",
+    defaultTheme: "system",
     themes: {
       light: {
         colors: {
@@ -89,4 +89,6 @@ const vuetify = createVuetify({
   },
 });
 
-createApp(App).use(router).use(vuetify).mount("#app");
+const rules = createRulesPlugin({}, vuetify.locale);
+
+createApp(App).use(router).use(vuetify).use(rules).mount("#app");
