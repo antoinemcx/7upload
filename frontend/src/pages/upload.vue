@@ -44,28 +44,49 @@ async function submit(e: SubmitEventPromise) {
 </script>
 
 <template>
-  <VContainer>
-    <VForm v-model="isValid" @submit.prevent="submit">
-      <VFileUpload v-model="files" :rules="[rules.required()]" />
-      <VNumberInput
-        v-model="retention"
-        suffix="s"
-        label="Rétention"
-        :rules="[rules.required(), rules.integer()]"
-      />
-      <VSwitch v-model="autodestruct" label="Auto-destruction" />
-      <VTextField v-model="password" type="password" label="Mot de passe" />
-      <VBtn
-        type="submit"
-        :disabled="!isValid"
-        block
-        size="x-large"
-        :color="isValid ? 'tertiary' : undefined"
-      >
-        Envoyer
-      </VBtn>
-    </VForm>
-    <pre>{{ msg }}</pre>
+  <VContainer max-width="800">
+    <h1 class="font-weight-bold mb-4 mt-3">Partage de fichiers</h1>
+
+    <VCard flat border>
+      <VCardText>
+        <VForm v-model="isValid" @submit.prevent="submit">
+          <VFileUpload v-model="files" :rules="[rules.required()]" class="mb-4" />
+
+          <VDivider class="mb-4" />
+
+          <p class="text-subtitle-2 text-medium-emphasis mb-3">Options</p>
+
+          <VNumberInput
+            v-model="retention"
+            suffix="s"
+            label="Durée de rétention"
+            :rules="[rules.required(), rules.integer()]"
+            class="mb-2"
+          />
+          <VSwitch v-model="autodestruct" label="Auto-destruction après téléchargement" />
+          <VTextField
+            v-model="password"
+            type="password"
+            label="Mot de passe (optionnel)"
+            class="mb-4"
+          />
+
+          <VBtn
+            type="submit"
+            :disabled="!isValid"
+            block
+            size="large"
+            :color="isValid ? 'primary' : undefined"
+          >
+            Envoyer
+          </VBtn>
+        </VForm>
+      </VCardText>
+    </VCard>
+
+    <VAlert v-if="msg" class="mt-4" type="info" variant="tonal">
+      {{ msg }}
+    </VAlert>
   </VContainer>
 </template>
 
