@@ -9,9 +9,18 @@ import { createReadStream } from "node:fs";
 const upload = multer({ dest: "tmp/files/" });
 
 const validator = z.object({
-  retention: z.coerce.number().int().positive(),
-  autodestruct: z.coerce.boolean(),
-  password: z.string().optional(),
+  retention: z.coerce
+    .number()
+    .int()
+    .positive()
+    .describe("File retention duration in seconds."),
+  autodestruct: z.coerce
+    .boolean()
+    .describe("True if the file is deleted after the first download."),
+  password: z
+    .string()
+    .optional()
+    .describe("Optional. Password to protect the file for download."),
 });
 
 export const handlers: RequestHandler[] = [
