@@ -20,12 +20,8 @@ const defaults = {
           <RouterLink to="/" class="logo-link">
             <span class="logo-text">7Upload</span>
           </RouterLink>
-          <RouterLink v-slot="{ navigate }" to="/" custom>
-            <VBtn variant="text" @click="navigate">Accueil</VBtn>
-          </RouterLink>
-          <RouterLink v-slot="{ navigate }" to="/upload" custom>
-            <VBtn variant="text" @click="navigate">Partage de fichiers</VBtn>
-          </RouterLink>
+          <VBtn variant="text" to="/">Accueil</VBtn>
+          <VBtn variant="text" to="/upload">Partage de fichiers</VBtn>
         </div>
       </VAppBar>
 
