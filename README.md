@@ -10,19 +10,26 @@ Our project is a file sharing app where you upload and share files with others e
 pnpm install
 ```
 
-2. Copy **backend/.env.example** to **backend/.env** and configure it as needed.
+2. Copy the example env files and configure them as needed.
 
 ```bash
 cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 ```
 
-3. Initialize your SQLite database with:
+3. Generate the Prisma client:
+
+```bash
+pnpm -r db:generate
+```
+
+4. Initialize your SQLite database with:
 
 ```bash
 pnpm -r db:migrate
 ```
 
-3. Start the app:
+5. Start the app:
 
 ```bash
 pnpm dev
