@@ -49,7 +49,7 @@ export const handlers: RequestHandler[] = [
       },
     });
 
-    await mkdir("files");
+    await mkdir("files", { recursive: true });
     await rename(file.path, "files/" + entity.id);
 
     res.status(201).json({
