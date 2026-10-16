@@ -1,5 +1,9 @@
 <script setup lang="ts"></script>
 
-<template>INDEX</template>
+<template>
+  INDEX
+
+  <QrCode></QrCode>
+</template>
 
 <style scoped></style>

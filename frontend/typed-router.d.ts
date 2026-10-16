@@ -37,6 +37,13 @@ declare module "vue-router/auto-routes" {
       { path: ParamValue<false> },
       never
     >;
+    "/testqr": RouteRecordInfo<
+      "/testqr",
+      "/testqr",
+      Record<never, never>,
+      Record<never, never>,
+      never
+    >;
     "/upload": RouteRecordInfo<
       "/upload",
       "/upload",
@@ -73,6 +80,11 @@ declare module "vue-router/auto-routes" {
       routes: "/[...path]";
       views: never;
       pathParamNames: "path";
+    };
+    "src/pages/testqr.vue": {
+      routes: "/testqr";
+      views: never;
+      pathParamNames: never;
     };
     "src/pages/upload.vue": {
       routes: "/upload";
