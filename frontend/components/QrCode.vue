@@ -13,18 +13,18 @@ const dialog = defineModel<boolean>("open", {
 </script>
 
 <template>
-  <v-dialog v-model="dialog" max-width="360">
-    <v-card>
-      <v-card-title class="text-center"> Scan to download file </v-card-title>
+  <VDialog v-model="dialog" max-width="360">
+    <VCard>
+      <VCardTitle class="text-center"> Scan to download file </VCardTitle>
 
-      <v-card-text class="d-flex justify-center">
+      <VCardText class="d-flex justify-center">
         <img :src="qrcode" width="210" height="210" />
-      </v-card-text>
+      </VCardText>
 
-      <v-card-actions>
-        <v-spacer />
-        <v-btn @click="dialog = false"> Close </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      <VCardActions>
+        <VSpacer />
+        <VBtn @click="dialog = false"> Close </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 </template>
