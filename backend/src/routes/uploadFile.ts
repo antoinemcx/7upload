@@ -8,8 +8,6 @@ import { scryptSync, randomBytes, createCipheriv } from "node:crypto";
 import { pipeline } from "node:stream/promises";
 import { AUTH_TAG_LENGTH, IV_LENGTH, SALT_LENGTH } from "../consts.ts";
 
-const salt = randomBytes(SALT_LENGTH);
-
 const upload = multer({ dest: "tmp/files/" });
 
 const validator = z.object({
@@ -51,6 +49,7 @@ export const handlers: RequestHandler[] = [
     if (password === undefined) {
       await rename(file.path, "files/" + entity.id);
     } else {
+      const salt = randomBytes(SALT_LENGTH);
       const key = scryptSync(password, salt, 32);
       const iv = randomBytes(IV_LENGTH);
       const cipher = createCipheriv("aes-256-gcm", key, iv, {
