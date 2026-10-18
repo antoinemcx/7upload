@@ -54,8 +54,6 @@ export const handlers: RequestHandler[] = [
         return;
       }
 
-      // TODO: check if the decrypted file content matches the hash (401 if not)
-
       const salt = metadata.cryptdata.subarray(0, SALT_LENGTH);
       const iv = metadata.cryptdata.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
       const authTag = metadata.cryptdata.subarray(

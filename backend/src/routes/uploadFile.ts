@@ -2,7 +2,6 @@ import type { RequestHandler } from "express";
 import multer from "multer";
 import z from "zod";
 import { prisma } from "../prisma.ts";
-import { createHash } from "node:crypto";
 import { mkdir, rename, rm } from "node:fs/promises";
 import { createReadStream, createWriteStream } from "node:fs";
 import { scryptSync, randomBytes, createCipheriv } from "node:crypto";
@@ -38,14 +37,10 @@ export const handlers: RequestHandler[] = [
     }
     const { retention, autodestruct, password } = validator.parse(req.body);
 
-    const hash = createHash("sha256");
-    await pipeline(createReadStream(file.path), hash);
-
     const entity = await prisma.file.create({
       data: {
         name: file.originalname,
         mimeType: file.mimetype,
-        hash: hash.digest(),
         retention,
         autodestruct: autodestruct === "true",
       },
