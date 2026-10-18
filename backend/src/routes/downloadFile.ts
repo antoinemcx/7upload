@@ -54,6 +54,7 @@ export const handlers: RequestHandler[] = [
         return;
       }
 
+      // Recover the salt, iv and auth tag from the database entry
       const salt = metadata.cryptdata.subarray(0, SALT_LENGTH);
       const iv = metadata.cryptdata.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
       const authTag = metadata.cryptdata.subarray(
@@ -70,11 +71,15 @@ export const handlers: RequestHandler[] = [
       };
 
       try {
+        // Decrypt once to check if the password is correct
         await pipeline(createReadStream("files/" + uuid), createDecipher());
       } catch {
         res.status(401).json({ error: "Invalid password" });
         return;
       }
+      // If correct, decrypt again and pipe it into the response
+      // We cant decrypt only once because as soon as we start piping into the response,
+      // we cant modify headers so when the wrong password throws its too late to return an error instead
       await pipeline(createReadStream("files/" + uuid), createDecipher(), res);
     }
 

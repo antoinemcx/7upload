@@ -61,6 +61,7 @@ export const handlers: RequestHandler[] = [
         cipher,
         createWriteStream("files/" + entity.id),
       );
+      // Save the salt, iv and auth tag into the database (required to decrypt)
       await prisma.file.update({
         where: { id: entity.id },
         data: { cryptdata: Buffer.concat([salt, iv, cipher.getAuthTag()]) },
