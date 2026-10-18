@@ -61,6 +61,11 @@ async function loadInfo() {
     loading.value = false;
     return;
   }
+  if (response.status === 410) {
+    error.value = "Le fichier a expiré et a été supprimé.";
+    loading.value = false;
+    return;
+  }
   if (!response.ok) {
     error.value =
       response.status === 404
@@ -95,6 +100,11 @@ async function startDownload() {
     headers["X-File-Password"] = password.value;
   }
   const response = await fetch(apiUrl.value, { headers });
+  if (response.status === 410) {
+    error.value = "Le fichier a expiré et a été supprimé.";
+    downloading.value = false;
+    return;
+  }
   if (!response.ok) {
     error.value = "Le téléchargement a échoué.";
     downloading.value = false;

@@ -5,6 +5,7 @@ import { createReadStream } from "node:fs";
 import { rm } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import { createFileDecipher } from "../utils/fileCrypto.ts";
+import { ensureFileNotExpired } from "../utils/fileExpiration.ts";
 
 const paramsValidator = z.object({
   uuid: z.uuid().describe("File UUID."),
@@ -34,7 +35,7 @@ export const handlers: RequestHandler[] = [
       return;
     }
 
-    // TODO: check expiration (410 if expired)
+    await ensureFileNotExpired(uuid, metadata.retention);
 
     res
       .status(200)

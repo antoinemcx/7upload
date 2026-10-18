@@ -6,6 +6,7 @@ import { pipeline } from "node:stream/promises";
 import z from "zod";
 import { prisma } from "../prisma.ts";
 import { createFileDecipher } from "../utils/fileCrypto.ts";
+import { ensureFileNotExpired } from "../utils/fileExpiration.ts";
 
 const paramsValidator = z.object({
   uuid: z.uuid().describe("File UUID."),
@@ -32,6 +33,8 @@ export const handlers: RequestHandler[] = [
       res.status(404).json({ error: "File not found" });
       return;
     }
+
+    await ensureFileNotExpired(uuid, metadata.retention);
 
     const extension = metadata.name.includes(".")
       ? metadata.name.slice(metadata.name.lastIndexOf("."))
