@@ -4,8 +4,7 @@ import { prisma } from "../prisma.ts";
 import { createReadStream } from "node:fs";
 import { rm } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
-import { createDecipheriv, scryptSync } from "node:crypto";
-import { AUTH_TAG_LENGTH, IV_LENGTH, SALT_LENGTH } from "../consts.ts";
+import { createFileDecipher } from "../utils/fileCrypto.ts";
 
 const paramsValidator = z.object({
   uuid: z.uuid().describe("File UUID."),
@@ -54,25 +53,12 @@ export const handlers: RequestHandler[] = [
         return;
       }
 
-      // Recover the salt, iv and auth tag from the database entry
-      const salt = metadata.cryptdata.subarray(0, SALT_LENGTH);
-      const iv = metadata.cryptdata.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
-      const authTag = metadata.cryptdata.subarray(
-        SALT_LENGTH + IV_LENGTH,
-        SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH,
-      );
-
-      const key = scryptSync(password, salt, 32);
-
-      const createDecipher = () => {
-        const d = createDecipheriv("aes-256-gcm", key, iv);
-        d.setAuthTag(authTag);
-        return d;
-      };
-
       try {
         // Decrypt once to check if the password is correct
-        await pipeline(createReadStream("files/" + uuid), createDecipher());
+        await pipeline(
+          createReadStream("files/" + uuid),
+          createFileDecipher(metadata.cryptdata, password),
+        );
       } catch {
         res.status(401).json({ error: "Invalid password" });
         return;
@@ -80,7 +66,11 @@ export const handlers: RequestHandler[] = [
       // If correct, decrypt again and pipe it into the response
       // We cant decrypt only once because as soon as we start piping into the response,
       // we cant modify headers so when the wrong password throws its too late to return an error instead
-      await pipeline(createReadStream("files/" + uuid), createDecipher(), res);
+      await pipeline(
+        createReadStream("files/" + uuid),
+        createFileDecipher(metadata.cryptdata, password),
+        res,
+      );
     }
 
     if (metadata.autodestruct) {

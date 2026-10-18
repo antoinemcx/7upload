@@ -101,5 +101,3 @@ async function submit(e: SubmitEventPromise) {
     />
   </VContainer>
 </template>
-
-<style scoped></style>
