@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, shallowRef } from "vue";
 import { useRules, type SubmitEventPromise } from "vuetify";
-import QrCode from "../../components/QrCode.vue";
+import ShareFileDialog from "../../components/ShareFileDialog.vue";
 
 const rules = useRules();
 
@@ -14,8 +14,8 @@ const password = ref<string>();
 
 // temp
 const msg = ref("");
-const qrText = ref("");
-const showQrCode = ref(false);
+const downloadUrl = ref("");
+const showShareDialog = ref(false);
 
 async function submit(e: SubmitEventPromise) {
   if (!(await e).valid) return;
@@ -44,8 +44,8 @@ async function submit(e: SubmitEventPromise) {
 
   msg.value = `Fichier envoyé avec succès : ID ${body.id}`;
 
-  qrText.value = `${import.meta.env.VITE_API_URL}/download/${body.id}`;
-  showQrCode.value = true;
+  downloadUrl.value = `${window.location.origin}/download/${body.id}`;
+  showShareDialog.value = true;
 }
 </script>
 
@@ -93,7 +93,12 @@ async function submit(e: SubmitEventPromise) {
     <VAlert v-if="msg" class="mt-4" type="info" variant="tonal">
       {{ msg }}
     </VAlert>
-    <QrCode v-if="qrText" v-model:open="showQrCode" :text="qrText" class="mt-4" />
+    <ShareFileDialog
+      v-if="downloadUrl"
+      v-model:open="showShareDialog"
+      :download-url="downloadUrl"
+      class="mt-4"
+    />
   </VContainer>
 </template>
 
