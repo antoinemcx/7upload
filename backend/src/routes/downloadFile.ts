@@ -1,4 +1,15 @@
-import type { Request, Response } from "express";
+import type { RequestHandler } from "express";
+import z from "zod";
+import { prisma } from "../prisma.ts";
+import { createReadStream } from "node:fs";
+import { rm } from "node:fs/promises";
+import { pipeline } from "node:stream/promises";
+import { createDecipheriv, scryptSync } from "node:crypto";
+import { AUTH_TAG_LENGTH, IV_LENGTH, SALT_LENGTH } from "../consts.ts";
+
+const paramsValidator = z.object({
+  uuid: z.uuid().describe("File UUID."),
+});
 
 /**
  * GET /files/:uuid
@@ -10,15 +21,71 @@ import type { Request, Response } from "express";
  * - 404: file not found
  * - 410: file expired or already downloaded (single use)
  */
-export async function execute(req: Request<{ uuid: string }>, res: Response) {
-  const { uuid } = req.params;
-  const password = req.get("X-File-Password");
+export const handlers: RequestHandler[] = [
+  async (req, res) => {
+    const { uuid } = paramsValidator.parse(req.params);
+    const password = req.get("X-File-Password");
 
-  // TODO: get the file metadata from the uuid in DB
-  // TODO: check expiration (410 if expired)
-  // TODO: hash then check the password if required (401 if invalid)
-  // TODO: send the file with res.download()
-  // TODO: delete the file if single use
+    const metadata = await prisma.file.findUnique({
+      where: { id: uuid },
+    });
 
-  res.status(501).json({ error: "Not yet implemented." });
-}
+    if (metadata === null) {
+      res.status(404).json({ error: "File not found" });
+      return;
+    }
+
+    // TODO: check expiration (410 if expired)
+
+    res
+      .status(200)
+      .contentType(metadata.mimeType)
+      .header("Content-Disposition", `attachment; filename="${metadata.name}"`);
+
+    if (password === undefined) {
+      if (metadata.cryptdata) {
+        res.status(401).json({ error: "Missing password" });
+        return;
+      }
+      await pipeline(createReadStream("files/" + uuid), res);
+    } else {
+      if (!metadata.cryptdata) {
+        res.status(422).json({ error: "Unnecessary password" });
+        return;
+      }
+
+      // Recover the salt, iv and auth tag from the database entry
+      const salt = metadata.cryptdata.subarray(0, SALT_LENGTH);
+      const iv = metadata.cryptdata.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+      const authTag = metadata.cryptdata.subarray(
+        SALT_LENGTH + IV_LENGTH,
+        SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH,
+      );
+
+      const key = scryptSync(password, salt, 32);
+
+      const createDecipher = () => {
+        const d = createDecipheriv("aes-256-gcm", key, iv);
+        d.setAuthTag(authTag);
+        return d;
+      };
+
+      try {
+        // Decrypt once to check if the password is correct
+        await pipeline(createReadStream("files/" + uuid), createDecipher());
+      } catch {
+        res.status(401).json({ error: "Invalid password" });
+        return;
+      }
+      // If correct, decrypt again and pipe it into the response
+      // We cant decrypt only once because as soon as we start piping into the response,
+      // we cant modify headers so when the wrong password throws its too late to return an error instead
+      await pipeline(createReadStream("files/" + uuid), createDecipher(), res);
+    }
+
+    if (metadata.autodestruct) {
+      await prisma.file.delete({ where: { id: uuid } });
+      await rm("files/" + uuid);
+    }
+  },
+];

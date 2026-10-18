@@ -8,10 +8,10 @@ datasource db {
 }
 
 model File {
-  id String @id() @default(uuid())
-  name String
-  mimeType String
-  hash Bytes
-  retention Int
+  id           String  @id() @default(uuid())
+  name         String
+  mimeType     String
+  retention    Int
   autodestruct Boolean
+  cryptdata    Bytes?
 }

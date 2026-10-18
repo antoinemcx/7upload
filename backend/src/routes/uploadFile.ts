@@ -2,9 +2,11 @@ import type { RequestHandler } from "express";
 import multer from "multer";
 import z from "zod";
 import { prisma } from "../prisma.ts";
-import { createHash } from "node:crypto";
-import { mkdir, readFile, rename } from "node:fs/promises";
-import { createReadStream } from "node:fs";
+import { mkdir, rename, rm } from "node:fs/promises";
+import { createReadStream, createWriteStream } from "node:fs";
+import { scryptSync, randomBytes, createCipheriv } from "node:crypto";
+import { pipeline } from "node:stream/promises";
+import { AUTH_TAG_LENGTH, IV_LENGTH, SALT_LENGTH } from "../consts.ts";
 
 const upload = multer({ dest: "tmp/files/" });
 
@@ -14,8 +16,8 @@ const validator = z.object({
     .int()
     .positive()
     .describe("File retention duration in seconds."),
-  autodestruct: z.coerce
-    .boolean()
+  autodestruct: z
+    .enum(["true", "false"])
     .describe("True if the file is deleted after the first download."),
   password: z
     .string()
@@ -33,24 +35,38 @@ export const handlers: RequestHandler[] = [
     }
     const { retention, autodestruct, password } = validator.parse(req.body);
 
-    const hash = createHash("sha256");
-
-    const readStream = createReadStream(file.path);
-    readStream.pipe(hash);
-    hash.end();
-
     const entity = await prisma.file.create({
       data: {
-        name: file.filename,
+        name: file.originalname,
         mimeType: file.mimetype,
-        hash: hash.digest(),
         retention,
-        autodestruct,
+        autodestruct: autodestruct === "true",
       },
     });
 
     await mkdir("files", { recursive: true });
-    await rename(file.path, "files/" + entity.id);
+
+    if (password === undefined) {
+      await rename(file.path, "files/" + entity.id);
+    } else {
+      const salt = randomBytes(SALT_LENGTH);
+      const key = scryptSync(password, salt, 32);
+      const iv = randomBytes(IV_LENGTH);
+      const cipher = createCipheriv("aes-256-gcm", key, iv, {
+        authTagLength: AUTH_TAG_LENGTH,
+      });
+      await pipeline(
+        createReadStream(file.path),
+        cipher,
+        createWriteStream("files/" + entity.id),
+      );
+      // Save the salt, iv and auth tag into the database (required to decrypt)
+      await prisma.file.update({
+        where: { id: entity.id },
+        data: { cryptdata: Buffer.concat([salt, iv, cipher.getAuthTag()]) },
+      });
+      await rm(file.path);
+    }
 
     res.status(201).json({
       id: entity.id,
