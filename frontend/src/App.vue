@@ -22,6 +22,7 @@ const defaults = {
           </RouterLink>
           <VBtn variant="text" to="/">Accueil</VBtn>
           <VBtn variant="text" to="/upload">Partage de fichiers</VBtn>
+          <VBtn variant="text" to="/download">Télécharger un fichier</VBtn>
         </div>
       </VAppBar>
 
