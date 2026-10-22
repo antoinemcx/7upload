@@ -42,7 +42,7 @@ async function submit(e: SubmitEventPromise) {
 
   const body: { id: string } = await res.json();
 
-  msg.value = `Fichier envoyé avec succès : ID ${body.id}`;
+  msg.value = `Fichiers envoyé avec succès : ID ${body.id}`;
 
   downloadUrl.value = `${window.location.origin}/download/${body.id}`;
   showShareDialog.value = true;
@@ -56,7 +56,12 @@ async function submit(e: SubmitEventPromise) {
     <VCard flat border>
       <VCardText>
         <VForm v-model="isValid" @submit.prevent="submit">
-          <VFileUpload v-model="files" :rules="[rules.required()]" class="mb-4" />
+          <VFileUpload
+            v-model="files"
+            :rules="[rules.required()]"
+            class="mb-4"
+            multiple
+          />
 
           <VDivider class="mb-4" />
 

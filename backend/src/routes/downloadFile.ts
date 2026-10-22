@@ -28,6 +28,7 @@ export const handlers: RequestHandler[] = [
 
     const metadata = await prisma.file.findUnique({
       where: { id: uuid },
+      include: { folder: true },
     });
 
     if (metadata === null) {
@@ -35,11 +36,11 @@ export const handlers: RequestHandler[] = [
       return;
     }
 
-    await ensureFileNotExpired(uuid, metadata.retention);
+    await ensureFileNotExpired(uuid, metadata.folder.retention);
 
     res
       .status(200)
-      .contentType(metadata.mimeType)
+      .contentType(metadata.mimetype)
       .header("Content-Disposition", `attachment; filename="${metadata.name}"`);
 
     if (password === undefined) {
@@ -74,7 +75,7 @@ export const handlers: RequestHandler[] = [
       );
     }
 
-    if (metadata.autodestruct) {
+    if (metadata.folder.autodestruct) {
       await prisma.file.delete({ where: { id: uuid } });
       await rm("files/" + uuid);
     }
