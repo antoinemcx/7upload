@@ -44,13 +44,30 @@ export async function deleteExpiredAndLostFiles() {
 
   console.log("Files missing from database:", missingFromDatabase);
   console.log("Files missing from folder:", missingFromFolder);
+  console.log(missingFromDatabase.size);
+  console.log(missingFromFolder.size);
 
-  // TODO 1 :
-  // si non vide missingFromDatabase -> delete dans folder les uuid
+  // TODO 1:
+  // Delete files that are present in the folder but not registered in the DB.
+  for (const fileId of missingFromDatabase) {
+    await rm("files/" + fileId, { force: true });
+  }
 
-  // TODO 2 :
-  // si non vide missingFromFolder -> delete dans DB les uuid
+  // TODO 2:
+  // Delete DB records for files that are no longer in the folder.
+  for (const fileId of missingFromFolder) {
+    await prisma.file.delete({ where: { id: fileId } });
+  }
 
-  // TODO 3 :
-  // delete expired files in the database with a loop for and calling the previous function ensureFileNotExpired
+  // TODO 3:
+  // Delete expired files by calling ensureFileNotExpired.
+  for (const file of filesDB) {
+    if (missingFromFolder.has(file.id)) continue;
+
+    try {
+      await ensureFileNotExpired(file.id, file.retention);
+    } catch (error) {
+      if ((error as { status?: number }).status !== 410) throw error;
+    }
+  }
 }
