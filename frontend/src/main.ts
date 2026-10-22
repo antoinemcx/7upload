@@ -7,6 +7,7 @@ import { routes } from "vue-router/auto-routes";
 
 import "vuetify/styles";
 import { createRulesPlugin, createVuetify } from "vuetify";
+import { fr } from "vuetify/locale";
 import * as components from "vuetify/components";
 import * as directives from "vuetify/directives";
 
@@ -36,6 +37,10 @@ const router = createRouter({
 const vuetify = createVuetify({
   components,
   directives,
+  locale: {
+    locale: "fr",
+    messages: { fr },
+  },
   theme: {
     defaultTheme: "system",
     themes: {
