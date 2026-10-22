@@ -56,7 +56,12 @@ async function submit(e: SubmitEventPromise) {
     <VCard flat border>
       <VCardText>
         <VForm v-model="isValid" @submit.prevent="submit">
-          <VFileUpload v-model="files" :rules="[rules.required()]" class="mb-4" />
+          <VFileUpload
+            v-model="files"
+            :rules="[rules.required()]"
+            class="mb-4"
+            multiple
+          />
 
           <VDivider class="mb-4" />
 

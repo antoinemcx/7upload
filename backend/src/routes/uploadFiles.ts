@@ -26,19 +26,17 @@ const validator = z.object({
 });
 
 export const handlers: RequestHandler[] = [
-  upload.single("files"),
+  upload.array("files"),
   async (req, res) => {
-    const file = req.file;
-    if (!file) {
+    const files = req.files as Express.Multer.File[] | undefined;
+    if (!files || !files.length) {
       res.status(422).send();
       return;
     }
     const { retention, autodestruct, password } = validator.parse(req.body);
 
-    const entity = await prisma.file.create({
+    const folder = await prisma.folder.create({
       data: {
-        name: file.originalname,
-        mimeType: file.mimetype,
         retention,
         autodestruct: autodestruct === "true",
       },
@@ -46,31 +44,41 @@ export const handlers: RequestHandler[] = [
 
     await mkdir("files", { recursive: true });
 
-    if (password === undefined) {
-      await rename(file.path, "files/" + entity.id);
-    } else {
-      const salt = randomBytes(SALT_LENGTH);
-      const key = scryptSync(password, salt, 32);
-      const iv = randomBytes(IV_LENGTH);
-      const cipher = createCipheriv("aes-256-gcm", key, iv, {
-        authTagLength: AUTH_TAG_LENGTH,
+    for (const file of files) {
+      const entity = await prisma.file.create({
+        data: {
+          folderId: folder.id,
+          name: file.originalname,
+          mimetype: file.mimetype,
+        },
       });
-      await pipeline(
-        createReadStream(file.path),
-        cipher,
-        createWriteStream("files/" + entity.id),
-      );
-      // Save the salt, iv and auth tag into the database (required to decrypt)
-      await prisma.file.update({
-        where: { id: entity.id },
-        data: { cryptdata: Buffer.concat([salt, iv, cipher.getAuthTag()]) },
-      });
-      await rm(file.path);
+
+      if (password === undefined) {
+        await rename(file.path, "files/" + entity.id);
+      } else {
+        const salt = randomBytes(SALT_LENGTH);
+        const key = scryptSync(password, salt, 32);
+        const iv = randomBytes(IV_LENGTH);
+        const cipher = createCipheriv("aes-256-gcm", key, iv, {
+          authTagLength: AUTH_TAG_LENGTH,
+        });
+        await pipeline(
+          createReadStream(file.path),
+          cipher,
+          createWriteStream("files/" + entity.id),
+        );
+        // Save the salt, iv and auth tag into the database (required to decrypt)
+        await prisma.file.update({
+          where: { id: entity.id },
+          data: { cryptdata: Buffer.concat([salt, iv, cipher.getAuthTag()]) },
+        });
+        await rm(file.path);
+      }
     }
 
     res.status(201).json({
-      id: entity.id,
-      link: `${req.protocol}://${req.get("host")}/files/${entity.id}`,
+      id: folder.id,
+      link: `${req.protocol}://${req.get("host")}/folder/${folder.id}`,
     });
   },
 ];

@@ -1,7 +1,6 @@
 import type { RequestHandler } from "express";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { PassThrough } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import z from "zod";
 import { prisma } from "../prisma.ts";
@@ -13,63 +12,64 @@ const paramsValidator = z.object({
 });
 
 /**
- * GET /files/:uuid/info
+ * GET /folders/:uuid
  * Optional header:
- * - X-File-Password: string = password if the file is protected
+ * - X-File-Password: string = password if the files are protected
  * Responses:
- * - 200: file metadata
+ * - 200: fodler metadata
  * - 401: missing or invalid password
- * - 404: file not found
+ * - 404: folder not found
  */
 export const handlers: RequestHandler[] = [
   async (req, res) => {
     const { uuid } = paramsValidator.parse(req.params);
 
-    const metadata = await prisma.file.findUnique({
+    const metadata = await prisma.folder.findUnique({
       where: { id: uuid },
+      include: { files: true },
     });
 
     if (metadata === null) {
-      res.status(404).json({ error: "File not found" });
+      res.status(404).json({ error: "Folder not found" });
       return;
     }
 
-    await ensureFileNotExpired(uuid, metadata.retention);
+    for (const file of metadata.files) {
+      await ensureFileNotExpired(file.id, metadata.retention);
+    }
 
-    const extension = metadata.name.includes(".")
-      ? metadata.name.slice(metadata.name.lastIndexOf("."))
-      : "";
-
-    if (metadata.cryptdata) {
+    if (metadata.files[0].cryptdata) {
       const password = req.get("X-File-Password");
       if (!password) {
-        res.status(401).json({ protected: true, extension });
+        res.status(401).json({ protected: true, error: "Missing password" });
         return;
       }
 
       // Validate the password by decrypting the file
       try {
         await pipeline(
-          createReadStream("files/" + uuid),
-          createFileDecipher(metadata.cryptdata, password),
-          new PassThrough(),
+          createReadStream("files/" + metadata.files[0].id),
+          createFileDecipher(metadata.files[0].cryptdata, password),
         );
       } catch {
-        res.status(401).json({ protected: true, extension, error: "Invalid password" });
+        res.status(401).json({ protected: true, error: "Invalid password" });
         return;
       }
     }
 
     // Returning file metadata and retention time remaining in seconds
-    const file = await stat("files/" + uuid);
+    const file = await stat("files/" + metadata.files[0].id);
     const remaining = Math.max(
       0,
       metadata.retention - Math.floor((Date.now() - file.mtimeMs) / 1000),
     );
 
     res.json({
-      name: metadata.name,
-      mimeType: metadata.mimeType,
+      files: metadata.files.map((file) => ({
+        id: file.id,
+        name: file.name,
+        mimetype: file.mimetype,
+      })),
       remaining,
       autodestruct: metadata.autodestruct,
     });

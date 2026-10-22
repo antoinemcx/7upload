@@ -37,16 +37,23 @@ declare module "vue-router/auto-routes" {
       { path: ParamValue<false> },
       never
     >;
-    "/upload": RouteRecordInfo<
-      "/upload",
-      "/upload",
+    "/download/": RouteRecordInfo<
+      "/download/",
+      "/download",
       Record<never, never>,
       Record<never, never>,
       never
     >;
-    "/view": RouteRecordInfo<
-      "/view",
-      "/view",
+    "/download/[uuid]": RouteRecordInfo<
+      "/download/[uuid]",
+      "/download/:uuid",
+      { uuid: ParamValue<true> },
+      { uuid: ParamValue<false> },
+      never
+    >;
+    "/upload": RouteRecordInfo<
+      "/upload",
+      "/upload",
       Record<never, never>,
       Record<never, never>,
       never
@@ -74,13 +81,18 @@ declare module "vue-router/auto-routes" {
       views: never;
       pathParamNames: "path";
     };
-    "src/pages/upload.vue": {
-      routes: "/upload";
+    "src/pages/download/index.vue": {
+      routes: "/download/";
       views: never;
       pathParamNames: never;
     };
-    "src/pages/view.vue": {
-      routes: "/view";
+    "src/pages/download/[uuid].vue": {
+      routes: "/download/[uuid]";
+      views: never;
+      pathParamNames: "uuid";
+    };
+    "src/pages/upload.vue": {
+      routes: "/upload";
       views: never;
       pathParamNames: never;
     };
