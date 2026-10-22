@@ -68,15 +68,15 @@ async function loadInfo() {
     return;
   }
   if (response.status === 410) {
-    error.value = "Le fichier a expiré et a été supprimé.";
+    error.value = "Le partage a expiré et a été supprimé.";
     loading.value = false;
     return;
   }
   if (!response.ok) {
     error.value =
       response.status === 404
-        ? "Fichier introuvable."
-        : "Impossible de charger le fichier.";
+        ? "Partage introuvable."
+        : "Impossible de charger le partage.";
     loading.value = false;
     return;
   }
@@ -159,10 +159,10 @@ onMounted(loadInfo);
       <VAlert type="error" variant="tonal">{{ error }}</VAlert>
     </VCard>
     <VCard v-else-if="passwordRequired" class="pa-6">
-      <VCardTitle>Fichier protégé</VCardTitle>
+      <VCardTitle>Partage protégé</VCardTitle>
       <VCardText>
         <p class="mb-4">
-          Saisissez le mot de passe pour afficher les informations du fichier.
+          Saisissez le mot de passe pour afficher les informations du dossier.
         </p>
         <p v-if="protectedExtension" class="mb-4">Extension : {{ protectedExtension }}</p>
         <VTextField
@@ -195,7 +195,12 @@ onMounted(loadInfo);
             </VBtn>
           </li>
         </ul>
-        <p v-if="info.autodestruct">Le fichier sera supprimé après téléchargement.</p>
+        <p v-if="info.autodestruct">
+          <template v-if="info.files.length > 1">
+            Les fichiers seront supprimés après téléchargement.
+          </template>
+          <template v-else>Le fichier sera supprimé après téléchargement.</template>
+        </p>
         <p v-else>Durée restante : {{ formatRemaining(info.remaining) }}</p>
       </VCardText>
     </VCard>

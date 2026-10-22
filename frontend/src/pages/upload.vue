@@ -42,7 +42,7 @@ async function submit(e: SubmitEventPromise) {
 
   const body: { id: string } = await res.json();
 
-  msg.value = `Fichier envoyé avec succès : ID ${body.id}`;
+  msg.value = `Fichiers envoyé avec succès : ID ${body.id}`;
 
   downloadUrl.value = `${window.location.origin}/download/${body.id}`;
   showShareDialog.value = true;
