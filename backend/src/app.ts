@@ -9,48 +9,56 @@ import * as uploadFile from "./routes/uploadFile.ts";
 import * as downloadFile from "./routes/downloadFile.ts";
 import * as fileInfo from "./routes/fileInfo.ts";
 
-const PORT = Number(process.env.PORT ?? 3000);
+// TEST
+import { deleteExpiredAndLostFiles } from "./utils/fileExpiration.ts";
 
-const app: Express = express();
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-File-Password");
-  if (req.method === "OPTIONS") {
-    res.sendStatus(204);
-    return;
-  }
-  next();
+// CALL TEST
+deleteExpiredAndLostFiles().catch((error) => {
+  console.error("Failed to clean expired files:", error);
 });
 
-app.use(express.json({ limit: "50mb" })); // file upload limit
+// const PORT = Number(process.env.PORT ?? 3000);
 
-/* Routing */
-const router = Router();
-router.post("/upload", ...uploadFile.handlers);
-router.get("/files/:uuid/info", ...fileInfo.handlers);
-router.get("/files/:uuid", ...downloadFile.handlers);
-app.use(router);
+// const app: Express = express();
 
-/* Error handling */
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: "Route not found" });
-});
+// app.use((req: Request, res: Response, next: NextFunction) => {
+//   res.setHeader("Access-Control-Allow-Origin", "*");
+//   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+//   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-File-Password");
+//   if (req.method === "OPTIONS") {
+//     res.sendStatus(204);
+//     return;
+//   }
+//   next();
+// });
 
-app.use(
-  (
-    err: Error & { status?: number },
-    req: Request,
-    res: Response,
-    _next: NextFunction,
-  ) => {
-    const status = err.status ?? 500;
-    if (status >= 500) console.error(err);
-    res.status(status).json({ error: status >= 500 ? "Internal error" : err.message });
-  },
-);
+// app.use(express.json({ limit: "50mb" })); // file upload limit
 
-app.listen(PORT, () => {
-  console.log(`API started at http://localhost:${PORT}`);
-});
+// /* Routing */
+// const router = Router();
+// router.post("/upload", ...uploadFile.handlers);
+// router.get("/files/:uuid/info", ...fileInfo.handlers);
+// router.get("/files/:uuid", ...downloadFile.handlers);
+// app.use(router);
+
+// /* Error handling */
+// app.use((req: Request, res: Response) => {
+//   res.status(404).json({ error: "Route not found" });
+// });
+
+// app.use(
+//   (
+//     err: Error & { status?: number },
+//     req: Request,
+//     res: Response,
+//     _next: NextFunction,
+//   ) => {
+//     const status = err.status ?? 500;
+//     if (status >= 500) console.error(err);
+//     res.status(status).json({ error: status >= 500 ? "Internal error" : err.message });
+//   },
+// );
+
+// app.listen(PORT, () => {
+//   console.log(`API started at http://localhost:${PORT}`);
+// });
