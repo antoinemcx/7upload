@@ -43,25 +43,25 @@ declare module 'vue-router/auto-routes' {
       '/:path(.*)',
       { path: ParamValue<true> },
       { path: ParamValue<false> },
-      | never
-    >,
-    '/download/': RouteRecordInfo<
-      '/download/',
-      '/download',
+      never
+    >;
+    "/download/": RouteRecordInfo<
+      "/download/",
+      "/download",
       Record<never, never>,
       Record<never, never>,
-      | never
-    >,
-    '/download/[uuid]': RouteRecordInfo<
-      '/download/[uuid]',
-      '/download/:uuid',
+      never
+    >;
+    "/download/[uuid]": RouteRecordInfo<
+      "/download/[uuid]",
+      "/download/:uuid",
       { uuid: ParamValue<true> },
       { uuid: ParamValue<false> },
-      | never
-    >,
-    '/upload': RouteRecordInfo<
-      '/upload',
-      '/upload',
+      never
+    >;
+    "/upload": RouteRecordInfo<
+      "/upload",
+      "/upload",
       Record<never, never>,
       Record<never, never>,
       | never
@@ -79,46 +79,31 @@ declare module 'vue-router/auto-routes' {
    * @internal
    */
   export interface _RouteFileInfoMap {
-    'src/pages/index.vue': {
-      routes:
-        | '/'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/[...path].vue': {
-      routes:
-        | '/[...path]'
-      views:
-        | never
-      pathParamNames:
-        | 'path'
-    }
-    'src/pages/download/index.vue': {
-      routes:
-        | '/download/'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/download/[uuid].vue': {
-      routes:
-        | '/download/[uuid]'
-      views:
-        | never
-      pathParamNames:
-        | 'uuid'
-    }
-    'src/pages/upload.vue': {
-      routes:
-        | '/upload'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
+    "src/pages/index.vue": {
+      routes: "/";
+      views: never;
+      pathParamNames: never;
+    };
+    "src/pages/[...path].vue": {
+      routes: "/[...path]";
+      views: never;
+      pathParamNames: "path";
+    };
+    "src/pages/download/index.vue": {
+      routes: "/download/";
+      views: never;
+      pathParamNames: never;
+    };
+    "src/pages/download/[uuid].vue": {
+      routes: "/download/[uuid]";
+      views: never;
+      pathParamNames: "uuid";
+    };
+    "src/pages/upload.vue": {
+      routes: "/upload";
+      views: never;
+      pathParamNames: never;
+    };
   }
 
   /**

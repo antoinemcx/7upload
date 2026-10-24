@@ -9,9 +9,16 @@ datasource db {
 
 model File {
   id           String  @id() @default(uuid())
+  folderId     String
+  folder       Folder  @relation(fields: [folderId], references: [id])
   name         String
-  mimeType     String
+  mimetype     String
+  cryptdata    Bytes?
+}
+
+model Folder {
+  id           String  @id() @default(uuid())
   retention    Int
   autodestruct Boolean
-  cryptdata    Bytes?
+  files        File[]
 }

@@ -6,9 +6,9 @@ import express, {
   type Response,
 } from "express";
 import cron from "node-cron";
-import * as uploadFile from "./routes/uploadFile.ts";
+import * as uploadFiles from "./routes/uploadFiles.ts";
 import * as downloadFile from "./routes/downloadFile.ts";
-import * as fileInfo from "./routes/fileInfo.ts";
+import * as folderInfo from "./routes/folderInfo.ts";
 
 import { deleteExpiredAndLostFiles } from "./utils/fileExpiration.ts";
 
@@ -55,8 +55,8 @@ app.use(express.json({ limit: "50mb" })); // file upload limit
 
 /* Routing */
 const router = Router();
-router.post("/upload", ...uploadFile.handlers);
-router.get("/files/:uuid/info", ...fileInfo.handlers);
+router.post("/upload", ...uploadFiles.handlers);
+router.get("/folders/:uuid", ...folderInfo.handlers);
 router.get("/files/:uuid", ...downloadFile.handlers);
 app.use(router);
 
