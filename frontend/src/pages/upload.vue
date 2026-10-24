@@ -2,13 +2,25 @@
 import { ref, shallowRef } from "vue";
 import { useRules, type SubmitEventPromise } from "vuetify";
 import ShareFileDialog from "../../components/ShareFileDialog.vue";
+import ExpirationPicker from "../../components/ExpirationPicker.vue";
+import { useExpiration } from "../composables/useExpiration";
 
 const rules = useRules();
 
 const isValid = ref(false);
 
 const files = shallowRef<File[]>([]);
-const retention = ref<number>(604_800);
+const {
+  today,
+  maxDate,
+  expirationDate,
+  expirationTime,
+  formattedDate,
+  expirationTimestamp,
+  validateExpiration,
+  getRetentionSeconds,
+} = useExpiration();
+
 const autodestruct = ref<boolean>(false);
 const password = ref<string>();
 
@@ -24,7 +36,7 @@ async function submit(e: SubmitEventPromise) {
   for (const file of files.value) {
     form.append("files", file);
   }
-  form.append("retention", retention.value.toFixed());
+  form.append("retention", getRetentionSeconds().toString());
   form.append("autodestruct", autodestruct.value.toString());
   if (password.value) {
     form.append("password", password.value);
@@ -67,14 +79,23 @@ async function submit(e: SubmitEventPromise) {
 
           <p class="text-subtitle-2 text-medium-emphasis mb-3">Options</p>
 
-          <VNumberInput
-            v-model="retention"
-            suffix="s"
-            label="Durée de rétention"
-            :rules="[rules.required(), rules.integer()]"
+          <!-- Retention time until expiration -->
+          <VInput
+            :model-value="expirationTimestamp"
+            :rules="[validateExpiration]"
             class="mb-2"
-          />
+          >
+            <ExpirationPicker
+              v-model:date="expirationDate"
+              v-model:time="expirationTime"
+              :min="today"
+              :max="maxDate"
+              :formatted-date="formattedDate"
+            />
+          </VInput>
           <VSwitch v-model="autodestruct" label="Auto-destruction après téléchargement" />
+
+          <!-- Password for file access -->
           <VTextField
             v-model="password"
             type="password"
