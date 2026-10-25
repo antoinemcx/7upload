@@ -4,6 +4,7 @@ import { prisma } from "../prisma.ts";
 import { createReadStream } from "node:fs";
 import { rm } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
+import { createGunzip } from "node:zlib";
 import { createFileDecipher } from "../utils/fileCrypto.ts";
 import { ensureFileNotExpired } from "../utils/fileExpiration.ts";
 
@@ -48,7 +49,7 @@ export const handlers: RequestHandler[] = [
         res.status(401).json({ error: "Missing password" });
         return;
       }
-      await pipeline(createReadStream("files/" + uuid), res);
+      await pipeline(createReadStream("files/" + uuid), createGunzip(), res);
     } else {
       if (!metadata.cryptdata) {
         res.status(422).json({ error: "Unnecessary password" });
@@ -71,6 +72,7 @@ export const handlers: RequestHandler[] = [
       await pipeline(
         createReadStream("files/" + uuid),
         createFileDecipher(metadata.cryptdata, password),
+        createGunzip(),
         res,
       );
     }
