@@ -1,15 +1,15 @@
-# N7 Web development project
+# ENSEEIHT Web development project
 
 Our project is a file sharing app where you upload and share files with others easily.
 
 ## Features
 
-- e2e encryption with user-provided password (optional, using `aes-256-gcm`)
-- ephemeral uploads (optional, file gets deleted after download)
-- uploads expiration after a user-provider duration
-- on-server file compression using `node:zlib`
-- multi-files uploads
-- qr-code generation for easier code sharing
+- single file or multi-files uploads
+  - qr-code generation for easier file(s) download
+  - uploads expiration after a user-provider duration
+  - on-server file compression using `node:zlib`
+- e2e encryption with user-provided password (using `aes-256-gcm`)
+- ephemeral uploads (file gets deleted after download)
 
 ## Installation
 
