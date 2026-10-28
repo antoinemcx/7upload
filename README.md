@@ -1,6 +1,6 @@
-# ENSEEIHT Web development project
+# 7Upload - ENSEEIHT Web development project
 
-Our project is a file sharing app where you upload and share files with others easily.
+7Upload is a file sharing web-based application where you upload and share files with others easily.
 
 ## Features
 
