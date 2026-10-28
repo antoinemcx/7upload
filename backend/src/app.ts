@@ -1,3 +1,4 @@
+import { mkdir } from "node:fs/promises";
 import express, {
   Router,
   type Express,
@@ -22,6 +23,8 @@ async function runFileCleanup() {
 
   cleanupInProgress = true;
   try {
+    await mkdir("files", { recursive: true });
+    await mkdir("tmp/files", { recursive: true });
     await deleteExpiredAndLostFiles();
   } catch (error) {
     console.error("Failed to clean expired files:", error);

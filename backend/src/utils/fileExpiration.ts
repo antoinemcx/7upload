@@ -1,4 +1,4 @@
-import { readdir, rm, stat } from "node:fs/promises";
+import { mkdir, readdir, rm, stat } from "node:fs/promises";
 import { prisma } from "../prisma.ts";
 
 /** Deletes an expired file and throws an HTTP 410 error. */
@@ -18,6 +18,7 @@ export async function ensureFileNotExpired(uuid: string, retention: number) {
 
 export async function deleteExpiredAndLostFiles() {
   // verify files that are in the file folder but not registered in the db
+  await mkdir("files", { recursive: true });
 
   // retrieving files in DB
   const files = await prisma.file.findMany({
