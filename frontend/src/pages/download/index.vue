@@ -32,7 +32,7 @@ function extractUuid(value: string) {
 function openDownload() {
   const uuid = extractUuid(code.value);
   if (!uuid) {
-    error.value = "Saisissez un code de fichier valide.";
+    error.value = "Saisissez un code de dossier valide.";
     return;
   }
 
@@ -43,16 +43,16 @@ function openDownload() {
 <template>
   <VContainer max-width="600">
     <VCard class="pa-4">
-      <VCardTitle>Accéder à un fichier</VCardTitle>
+      <VCardTitle>Accéder à un partage</VCardTitle>
       <VCardText>
-        <p class="mb-4">Saisissez le code du fichier à télécharger.</p>
+        <p class="mb-4">Saisissez le code du partage.</p>
         <VTextField
           v-model="code"
           label="Code de téléchargement"
           :error-messages="error"
           @keyup.enter="openDownload"
         />
-        <VBtn block color="primary" @click="openDownload">Accéder au fichier</VBtn>
+        <VBtn block color="primary" @click="openDownload">Accéder au partage</VBtn>
       </VCardText>
     </VCard>
   </VContainer>

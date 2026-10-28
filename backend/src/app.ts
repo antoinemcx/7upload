@@ -5,9 +5,36 @@ import express, {
   type Request,
   type Response,
 } from "express";
-import * as uploadFile from "./routes/uploadFile.ts";
+import cron from "node-cron";
+import * as uploadFiles from "./routes/uploadFiles.ts";
 import * as downloadFile from "./routes/downloadFile.ts";
-import * as fileInfo from "./routes/fileInfo.ts";
+import * as folderInfo from "./routes/folderInfo.ts";
+
+import { deleteExpiredAndLostFiles } from "./utils/fileExpiration.ts";
+
+let cleanupInProgress = false;
+
+async function runFileCleanup() {
+  if (cleanupInProgress) {
+    console.warn("File cleanup skipped because a previous cleanup is still running.");
+    return;
+  }
+
+  cleanupInProgress = true;
+  try {
+    await deleteExpiredAndLostFiles();
+  } catch (error) {
+    console.error("Failed to clean expired files:", error);
+  } finally {
+    cleanupInProgress = false;
+  }
+}
+
+// Run once when the backend starts, then at the beginning of every hour.
+void runFileCleanup();
+cron.schedule("0 * * * *", () => {
+  void runFileCleanup();
+});
 
 const PORT = Number(process.env.PORT ?? 3000);
 
@@ -28,8 +55,8 @@ app.use(express.json({ limit: "50mb" })); // file upload limit
 
 /* Routing */
 const router = Router();
-router.post("/upload", ...uploadFile.handlers);
-router.get("/files/:uuid/info", ...fileInfo.handlers);
+router.post("/upload", ...uploadFiles.handlers);
+router.get("/folders/:uuid", ...folderInfo.handlers);
 router.get("/files/:uuid", ...downloadFile.handlers);
 app.use(router);
 

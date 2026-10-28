@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, shallowRef } from "vue";
 import { useRoute } from "vue-router";
 
 const suspiciousExtensions = new Set([
@@ -20,26 +20,32 @@ function isSuspiciousFile(name: string) {
 }
 
 type FileInfo = {
+  id: string;
   name: string;
-  mimeType: string;
+  mimetype: string;
+};
+
+type FolderInfo = {
+  files: FileInfo[];
   remaining: number;
   autodestruct: boolean;
 };
 
-const route = useRoute();
-const info = ref<FileInfo>();
+const route = useRoute("/download/[uuid]");
+const info = shallowRef<FolderInfo>();
 const password = ref("");
 const passwordRequired = ref(false);
 const protectedExtension = ref("");
 const error = ref("");
 const loading = ref(true);
 const downloading = ref(false);
-const confirmationOpen = ref(false);
+const confirmation = shallowRef<FileInfo>();
 
-const uuid = computed(() => ("uuid" in route.params ? String(route.params.uuid) : ""));
-const apiUrl = computed(() => `${import.meta.env.VITE_API_URL}/files/${uuid.value}`);
+const uuid = computed(() => route.params.uuid);
 const suspicious = computed(
-  () => info.value !== undefined && isSuspiciousFile(info.value.name),
+  () =>
+    info.value !== undefined &&
+    info.value.files.some((file) => isSuspiciousFile(file.name)),
 );
 
 /** Load the file metadata information from the API. */
@@ -52,46 +58,46 @@ async function loadInfo() {
   }
 
   // Fetch the file info from the API with the password header if provided
-  const response = await fetch(`${apiUrl.value}/info`, { headers });
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/folders/${uuid.value}`, {
+    headers,
+  });
   if (response.status === 401) {
-    const body = (await response.json()) as { extension?: string };
-    protectedExtension.value = body.extension ?? "";
     passwordRequired.value = true;
     if (password.value) error.value = "Mot de passe incorrect.";
     loading.value = false;
     return;
   }
   if (response.status === 410) {
-    error.value = "Le fichier a expiré et a été supprimé.";
+    error.value = "Le partage a expiré et a été supprimé.";
     loading.value = false;
     return;
   }
   if (!response.ok) {
     error.value =
       response.status === 404
-        ? "Fichier introuvable."
-        : "Impossible de charger le fichier.";
+        ? "Partage introuvable."
+        : "Impossible de charger le partage.";
     loading.value = false;
     return;
   }
 
   // Parse the file info from the response
-  info.value = (await response.json()) as FileInfo;
+  info.value = await response.json();
   passwordRequired.value = false;
   loading.value = false;
 }
 
 /** Download the file with confirmation if needed. */
-async function download() {
+async function download(file: FileInfo) {
   if (suspicious.value) {
-    confirmationOpen.value = true;
+    confirmation.value = file;
     return;
   }
-  await startDownload();
+  await startDownload(file);
 }
 
 /** Start the download process. */
-async function startDownload() {
+async function startDownload(file: FileInfo) {
   downloading.value = true;
 
   // Fetch the file from the API with the password header if provided
@@ -99,7 +105,9 @@ async function startDownload() {
   if (password.value) {
     headers["X-File-Password"] = password.value;
   }
-  const response = await fetch(apiUrl.value, { headers });
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/files/${file.id}`, {
+    headers,
+  });
   if (response.status === 410) {
     error.value = "Le fichier a expiré et a été supprimé.";
     downloading.value = false;
@@ -115,7 +123,7 @@ async function startDownload() {
   const blob = await response.blob();
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = info.value?.name ?? "fichier";
+  link.download = file.name;
   link.click();
   URL.revokeObjectURL(link.href);
   downloading.value = false;
@@ -151,10 +159,10 @@ onMounted(loadInfo);
       <VAlert type="error" variant="tonal">{{ error }}</VAlert>
     </VCard>
     <VCard v-else-if="passwordRequired" class="pa-6">
-      <VCardTitle>Fichier protégé</VCardTitle>
+      <VCardTitle>Partage protégé</VCardTitle>
       <VCardText>
         <p class="mb-4">
-          Saisissez le mot de passe pour afficher les informations du fichier.
+          Saisissez le mot de passe pour afficher les informations du dossier.
         </p>
         <p v-if="protectedExtension" class="mb-4">Extension : {{ protectedExtension }}</p>
         <VTextField
@@ -169,26 +177,39 @@ onMounted(loadInfo);
     </VCard>
 
     <VCard v-else-if="info" class="pa-6">
-      <VCardTitle>{{ info.name }}</VCardTitle>
       <VCardText>
-        <p>Type : {{ info.mimeType }}</p>
-        <p v-if="info.autodestruct">Le fichier sera supprimé après téléchargement.</p>
+        <p>Fichiers</p>
+        <ul>
+          <li v-for="file in info.files" class="d-flex">
+            {{ file.name }} (type: {{ file.mimetype }})
+            <VSpacer />
+            <VBtn
+              color="primary"
+              variant="flat"
+              :loading="downloading"
+              @click="() => download(file)"
+              size="small"
+              class="my-1"
+            >
+              Télécharger
+            </VBtn>
+          </li>
+        </ul>
+        <p v-if="info.autodestruct">
+          <template v-if="info.files.length > 1">
+            Les fichiers seront supprimés après téléchargement.
+          </template>
+          <template v-else>Le fichier sera supprimé après téléchargement.</template>
+        </p>
         <p v-else>Durée restante : {{ formatRemaining(info.remaining) }}</p>
       </VCardText>
-      <VCardActions>
-        <VBtn
-          block
-          color="primary"
-          variant="flat"
-          :loading="downloading"
-          @click="download"
-        >
-          Télécharger
-        </VBtn>
-      </VCardActions>
     </VCard>
 
-    <VDialog v-model="confirmationOpen" max-width="500">
+    <VDialog
+      :model-value="!!confirmation"
+      @update:model-value="confirmation = undefined"
+      max-width="500"
+    >
       <VCard>
         <VCardTitle>Attention</VCardTitle>
         <VCardText>
@@ -196,12 +217,12 @@ onMounted(loadInfo);
         </VCardText>
         <VCardActions>
           <VSpacer />
-          <VBtn @click="confirmationOpen = false">Annuler</VBtn>
+          <VBtn @click="confirmation = undefined">Annuler</VBtn>
           <VBtn
             color="error"
             @click="
-              confirmationOpen = false;
-              startDownload();
+              confirmation && startDownload(confirmation);
+              confirmation = undefined;
             "
           >
             Télécharger
