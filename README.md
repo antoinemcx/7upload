@@ -11,6 +11,8 @@
 - e2e encryption with user-provided password (using `aes-256-gcm`)
 - ephemeral uploads (file gets deleted after download)
 
+![Upload screen screenshot](docs/upload_screenshot.png)
+
 ## Installation
 
 1. Install pnpm and run:
