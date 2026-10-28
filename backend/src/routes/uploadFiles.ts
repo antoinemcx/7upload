@@ -2,10 +2,11 @@ import type { RequestHandler } from "express";
 import multer from "multer";
 import z from "zod";
 import { prisma } from "../prisma.ts";
-import { mkdir, rename, rm } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { createReadStream, createWriteStream } from "node:fs";
 import { scryptSync, randomBytes, createCipheriv } from "node:crypto";
 import { pipeline } from "node:stream/promises";
+import { createGzip } from "node:zlib";
 import { AUTH_TAG_LENGTH, IV_LENGTH, SALT_LENGTH } from "../consts.ts";
 
 const upload = multer({ dest: "tmp/files/" });
@@ -54,7 +55,12 @@ export const handlers: RequestHandler[] = [
       });
 
       if (password === undefined) {
-        await rename(file.path, "files/" + entity.id);
+        await pipeline(
+          createReadStream(file.path),
+          createGzip(),
+          createWriteStream("files/" + entity.id),
+        );
+        await rm(file.path);
       } else {
         const salt = randomBytes(SALT_LENGTH);
         const key = scryptSync(password, salt, 32);
@@ -64,6 +70,7 @@ export const handlers: RequestHandler[] = [
         });
         await pipeline(
           createReadStream(file.path),
+          createGzip(),
           cipher,
           createWriteStream("files/" + entity.id),
         );
