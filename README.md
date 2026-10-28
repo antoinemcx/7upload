@@ -14,6 +14,9 @@ It was developed for an M1 web development course project of the french ENSEEIHT
 
 ![Upload screen screenshot](docs/upload_screenshot.png)
 
+Files are stored on the server's filesystem and metadata is stored in a SQLite database.  
+An automatic cleanup script (using `node-cron`) is run every hour to delete expired uploads.
+
 ## Installation
 
 1. Install pnpm and run:
