@@ -1,0 +1,66 @@
+# syntax=docker/dockerfile:1
+#
+# Builds a single image running both the backend (API + static frontend) and
+# the frontend (pre-built by Vite, served by the backend on the same port).
+#
+# Build (from the repository root):
+#   podman build -f deploy/Containerfile -t 7upload .
+# Run:
+#   podman run -d --name 7upload -p 3000:3000 -v 7upload-data:/data 7upload
+# The app is then available at http://localhost:3000
+
+############################
+# Builder: install deps, generate the Prisma client, build the frontend
+############################
+FROM docker.io/library/node:24-bookworm-slim AS builder
+
+# husky's prepare hook needs a .git dir, which is not part of the build context
+ENV HUSKY=0
+RUN corepack enable
+
+WORKDIR /app
+
+# Install dependencies first for better layer caching
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY backend/package.json backend/pnpm-lock.yaml ./backend/
+COPY frontend/package.json frontend/pnpm-lock.yaml ./frontend/
+RUN pnpm install --frozen-lockfile
+
+COPY backend ./backend
+COPY frontend ./frontend
+COPY deploy ./deploy
+
+# Prisma client is generated into backend/generated (not committed to git)
+RUN cd backend && DATABASE_URL="file:./dev.db" pnpm db:generate
+
+# Build the frontend. An empty VITE_API_URL makes API calls same-origin,
+# since the backend serves the built frontend on the same port.
+RUN VITE_API_URL= pnpm --filter frontend build
+
+############################
+# Runtime image
+############################
+FROM docker.io/library/node:24-bookworm-slim AS runtime
+
+RUN groupadd --system app \
+ && useradd --system --gid app --home-dir /app --shell /usr/sbin/nologin app \
+ && mkdir -p /data/files /data/tmp/files \
+ && chown -R app:app /data
+
+RUN apt-get update -y && apt-get install -y openssl
+
+WORKDIR /app
+COPY --from=builder --chown=app:app /app /app
+RUN chmod +x /app/deploy/entrypoint.sh \
+ # Keep the SQLite db, uploads and the upload temp dir in /data so that a
+ # single volume (-v ...:/data) persists all of them
+ && ln -s /data/files /app/backend/files \
+ && ln -s /data/tmp /app/backend/tmp
+
+ENV NODE_ENV=production \
+    PORT=3000 \
+    DATABASE_URL="file:/data/app.db" \
+    FRONTEND_DIST="/app/frontend/dist"
+EXPOSE 3000
+USER app
+ENTRYPOINT ["/app/deploy/entrypoint.sh"]

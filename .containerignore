@@ -1,0 +1,13 @@
+.git
+.idea
+.vscode
+.husky
+docs
+**/node_modules
+**/dist
+**/.env
+backend/generated
+backend/dev.db
+backend/files
+backend/tmp
+*.log

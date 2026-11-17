@@ -1,4 +1,6 @@
+import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
+import path from "node:path";
 import express, {
   Router,
   type Express,
@@ -62,6 +64,20 @@ router.post("/upload", ...uploadFiles.handlers);
 router.get("/folders/:uuid", ...folderInfo.handlers);
 router.get("/files/:uuid", ...downloadFile.handlers);
 app.use(router);
+
+/* Static frontend (only when a production build exists, e.g. in the container image) */
+const frontendDist = process.env.FRONTEND_DIST ?? path.resolve("../frontend/dist");
+if (existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  // SPA fallback: navigation requests that matched neither an API route nor a static file
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.method === "GET" && req.accepts("html")) {
+      res.sendFile(path.join(frontendDist, "index.html"));
+      return;
+    }
+    next();
+  });
+}
 
 /* Error handling */
 app.use((req: Request, res: Response) => {

@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "node src/app.ts",
+    "start": "prisma migrate deploy && node src/app.ts",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate"
   },
